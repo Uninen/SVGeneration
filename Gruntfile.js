@@ -1,5 +1,4 @@
-module.exports = function (grunt) {
-
+module.exports = function(grunt) {
   var concatJS = [
     'js/_bower.js',
     'js/browser.js',
@@ -7,7 +6,7 @@ module.exports = function (grunt) {
     'js/navbar.js',
     'js/editor.js',
     'js/main.js',
-  ];
+  ]
 
   grunt.initConfig({
     pages: [],
@@ -15,7 +14,7 @@ module.exports = function (grunt) {
     ejs: {
       dev: {
         options: {
-          env:'dev'
+          env: 'dev',
         },
         src: ['templates/pages/*.ejs', '!node_modules/**/*'],
         dest: 'dist/',
@@ -25,7 +24,7 @@ module.exports = function (grunt) {
       },
       prod: {
         options: {
-          env:'prod'
+          env: 'prod',
         },
         src: ['templates/pages/*.ejs', '!node_modules/**/*'],
         dest: 'dist/',
@@ -36,42 +35,45 @@ module.exports = function (grunt) {
     },
 
     shell: {
-      'pwd': {
-          command:'pwd',
-          stdout: true,
-          failOnError: true
+      pwd: {
+        command: 'pwd',
+        stdout: true,
+        failOnError: true,
       },
-      'jsx': {
+      jsx: {
         command: [
-          'jsx -x jsx jsx/ js/',
+          '/Users/uninen/LocalDocuments/Projects/SVGeneration/node_modules/react-tools/bin/jsx -x jsx jsx/ js/',
         ].join(' && '),
         stdout: true,
-        failOnError: true
+        failOnError: true,
       },
       images: {
         command: 'node compile_image_data.js',
         stdout: true,
-        failOnError: true
-      }
+        failOnError: true,
+      },
     },
 
-    sass: {                              // Task
-      options: {                       // Target options
-        style: 'compressed'
+    sass: {
+      // Task
+      options: {
+        // Target options
+        style: 'compressed',
       },
-      dist: {                            // Target
+      dist: {
+        // Target
         files: {
-          'style.css': 'scss/app.scss'
-        }
-      }
+          'style.css': 'scss/app.scss',
+        },
+      },
     },
 
     bower_concat: {
       all: {
         dest: 'js/_bower.js',
         mainFiles: {
-          'ace-builds': ['src-min/ace.js']
-        }
+          'ace-builds': ['src-min/ace.js'],
+        },
       },
     },
 
@@ -80,10 +82,18 @@ module.exports = function (grunt) {
         cwd: 'bower_components/jquery-ui/themes/flick',
         src: '**/*',
         dest: 'sources/flick',
-        expand: true
+        expand: true,
       },
       all: {
-        src: ['*.css', 'CNAME', '*.html', 'images/**/*', 'sources/**/*', 'recipes/**/*', '!Gruntfile.js'],
+        src: [
+          '*.css',
+          'CNAME',
+          '*.html',
+          'images/**/*',
+          'sources/**/*',
+          'recipes/**/*',
+          '!Gruntfile.js',
+        ],
         dest: 'dist/',
       },
     },
@@ -91,7 +101,7 @@ module.exports = function (grunt) {
     concat: {
       all: {
         src: concatJS,
-        dest: 'dist/app.js'
+        dest: 'dist/app.js',
       },
     },
 
@@ -99,7 +109,7 @@ module.exports = function (grunt) {
       options: {
         port: process.env.PORT || 3131,
         base: 'dist/',
-        hostname: '*'
+        hostname: '*',
       },
 
       all: {},
@@ -108,19 +118,16 @@ module.exports = function (grunt) {
     browserSync: {
       options: {
         notify: false,
-        background: true
+        background: true,
       },
       livereload: {
         options: {
-          files: [
-            'dist/*.html', 'dist/*.css', 'dist/*.js'
-          ],
-        }
+          files: ['dist/*.html', 'dist/*.css', 'dist/*.js'],
+        },
       },
     },
 
     watch: {
-
       grunt: {
         files: 'Gruntfile.js',
         tasks: ['default'],
@@ -135,11 +142,11 @@ module.exports = function (grunt) {
       },
       sass: {
         files: 'scss/**/*.scss',
-        tasks: 'sass'
+        tasks: 'sass',
       },
       jsx: {
         files: 'jsx/**/*',
-        tasks: 'shell:jsx'
+        tasks: 'shell:jsx',
       },
 
       js: {
@@ -150,44 +157,60 @@ module.exports = function (grunt) {
       assets: {
         files: ['assets/**/*', '*.css', '*.js', 'images/**/*', '!Gruntfile.js'],
         tasks: ['copy'],
-      }
+      },
     },
 
     'gh-pages': {
       options: {
-        base: 'dist/'
+        base: 'dist/',
       },
-      src: ['**/*']
+      src: ['**/*'],
+    },
+  })
+
+  require('matchdep')
+    .filterDev('grunt-*')
+    .forEach(grunt.loadNpmTasks)
+
+  grunt.registerTask('default', [
+    'ejs:dev',
+    'shell',
+    'sass',
+    'build-images',
+    'bower_concat',
+    'concat',
+    'copy',
+  ])
+
+  grunt.registerTask('compile-prod', [
+    'ejs:prod',
+    'shell',
+    'sass',
+    'build-images',
+    'bower_concat',
+    'concat',
+    'copy',
+  ])
+
+  grunt.registerTask('serve', 'start the static file watch compiler and browsersync', function() {
+    grunt.task.run(['default', 'connect', 'browserSync:livereload', 'watch'])
+  })
+
+  grunt.registerTask(
+    'build-images',
+    'This creates all of the static html files for each graphic',
+    function() {
+      var fs = require('fs')
+
+      var editorTemplate = fs.readFileSync('dist/editor.html', 'utf8')
+
+      var images = JSON.parse(fs.readFileSync('recipes/data.json', 'utf8'))
+      images.map(function(img) {
+        //Copy each of the html files
+        fs.writeFileSync('recipes/' + img + '/index.html', editorTemplate)
+      })
     }
-  });
+  )
 
-  require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
-
-  grunt.registerTask('default', ['ejs:dev', 'shell', 'sass', 'build-images', 'bower_concat', 'concat', 'copy']);
-
-  grunt.registerTask('compile-prod', ['ejs:prod', 'shell', 'sass', 'build-images', 'bower_concat', 'concat', 'copy']);
-
-  grunt.registerTask('serve', 'start the static file watch compiler and browsersync', function () {
-    grunt.task.run([
-      'default',
-      'connect',
-      'browserSync:livereload',
-      'watch'
-    ]);
-  });
-
-  grunt.registerTask('build-images', 'This creates all of the static html files for each graphic', function () {
-    var fs = require('fs');
-
-    var editorTemplate = fs.readFileSync('dist/editor.html', 'utf8');
-
-    var images = JSON.parse(fs.readFileSync('recipes/data.json', 'utf8'));
-    images.map(function (img) {
-      //Copy each of the html files
-      fs.writeFile('recipes/' + img + '/index.html', editorTemplate);
-    });
-  });
-
-  grunt.registerTask('deploy', ['compile-prod', 'gh-pages']);
-
-};
+  grunt.registerTask('deploy', ['compile-prod', 'gh-pages'])
+}
